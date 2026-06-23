@@ -1,4 +1,5 @@
-import { Bowl, Clock } from "@/components/Icons";
+import Bowl from "@/components/icons/Bowl";
+import Clock from "@/components/icons/Clock";
 
 type Props = {
   time: string;

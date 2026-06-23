@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowRight, Bookmark } from "@/components/Icons";
+import ArrowRight from "@/components/icons/ArrowRight";
+import Bookmark from "@/components/icons/Bookmark";
 
 export default function EmptyState() {
   return (

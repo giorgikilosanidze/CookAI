@@ -3,24 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-
-const NAV_LINKS = [
-  { href: "/generate", label: "Generate" },
-  { href: "/saved", label: "Saved Recipes" },
-];
-
-function Logo() {
-  return (
-    <Link href="/" className="flex items-center gap-[11px] no-underline">
-      <span className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-terracotta font-serif text-[21px] font-semibold text-white shadow-cta">
-        C
-      </span>
-      <span className="font-serif text-[23px] font-semibold tracking-tight text-ink">
-        CookAI
-      </span>
-    </Link>
-  );
-}
+import Logo from "@/components/Logo";
+import { NAV_LINKS } from "@/components/constants";
 
 export default function Navbar() {
   const pathname = usePathname();

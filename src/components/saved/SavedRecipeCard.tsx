@@ -1,7 +1,7 @@
 import type { KeyboardEvent } from "react";
 import type { SavedRecipe } from "@/lib/savedRecipes";
 import { thumbGradient } from "@/lib/savedRecipes";
-import { Trash } from "@/components/Icons";
+import Trash from "@/components/icons/Trash";
 import RecipeMeta from "@/components/RecipeMeta";
 
 type Props = {

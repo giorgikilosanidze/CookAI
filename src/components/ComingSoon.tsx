@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight } from "@/components/Icons";
+import ArrowRight from "@/components/icons/ArrowRight";
 
 type Props = {
   eyebrow: string;

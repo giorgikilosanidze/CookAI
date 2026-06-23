@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import type { SavedRecipe } from "@/lib/savedRecipes";
 import { thumbGradient } from "@/lib/savedRecipes";
-import { Trash } from "@/components/Icons";
+import Trash from "@/components/icons/Trash";
 import RecipeDetails from "@/components/RecipeDetails";
 
 type Props = {
