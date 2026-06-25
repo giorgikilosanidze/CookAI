@@ -17,3 +17,12 @@ export const COOK_TIMES = [
 // Shimmer gradient classes for the loading skeleton blocks.
 export const SHIMMER =
   "bg-[linear-gradient(90deg,#EFE6D8_25%,#F7F1E7_50%,#EFE6D8_75%)] bg-[length:200%_100%] animate-shimmer";
+
+// Rotating status lines shown while a recipe is being generated.
+export const STATUS_MESSAGES = [
+  "Looking through your pantry…",
+  "Finding flavor pairings…",
+  "Balancing the seasoning…",
+  "Writing up the steps…",
+  "Plating it up…",
+];

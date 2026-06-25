@@ -5,9 +5,9 @@ import IngredientInput from '@/components/generate/IngredientInput';
 import FilterSelect from '@/components/generate/FilterSelect';
 import GeneratingState from '@/components/generate/GeneratingState';
 import RecipeCard from '@/components/RecipeCard';
-import { MOCK_RECIPE, STATUS_MESSAGES } from '@/lib/mockRecipe';
-import { CUISINES, DIETS, COOK_TIMES } from '@/components/generate/constants';
+import { CUISINES, DIETS, COOK_TIMES, STATUS_MESSAGES } from '@/components/generate/constants';
 import type { Phase } from '@/components/generate/types';
+import type { Recipe } from '@/lib/types';
 
 export default function GeneratorClient() {
 	const [ingredients, setIngredients] = useState<string[]>([
@@ -23,18 +23,24 @@ export default function GeneratorClient() {
 	const [phase, setPhase] = useState<Phase>('idle');
 	const [statusIndex, setStatusIndex] = useState(0);
 	const [saved, setSaved] = useState(false);
+	const [recipe, setRecipe] = useState<Recipe | null>(null);
+	const [errorMsg, setErrorMsg] = useState('');
 
 	const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-	const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const abortRef = useRef<AbortController | null>(null);
 
 	const clearTimers = () => {
 		if (intervalRef.current) clearInterval(intervalRef.current);
-		if (timeoutRef.current) clearTimeout(timeoutRef.current);
 		intervalRef.current = null;
-		timeoutRef.current = null;
 	};
 
-	useEffect(() => clearTimers, []);
+	useEffect(
+		() => () => {
+			clearTimers();
+			abortRef.current?.abort();
+		},
+		[],
+	);
 
 	const addIngredient = (value: string) => {
 		setIngredients((prev) =>
@@ -46,11 +52,18 @@ export default function GeneratorClient() {
 		setIngredients((prev) => prev.filter((_, i) => i !== index));
 	};
 
-	// Mock generate flow: show loading, rotate status messages, then reveal result.
-	const generate = () => {
+	// Call the Gemini-backed API, rotating status messages while it works.
+	const generate = async () => {
 		if (phase === 'loading') return;
+		if (ingredients.length === 0) {
+			setErrorMsg('Add at least one ingredient first.');
+			setPhase('error');
+			return;
+		}
+
 		clearTimers();
 		setSaved(false);
+		setErrorMsg('');
 		setStatusIndex(0);
 		setPhase('loading');
 
@@ -58,14 +71,36 @@ export default function GeneratorClient() {
 			setStatusIndex((i) => (i + 1) % STATUS_MESSAGES.length);
 		}, 1200);
 
-		timeoutRef.current = setTimeout(() => {
+		const controller = new AbortController();
+		abortRef.current = controller;
+
+		try {
+			const res = await fetch('/api/generate', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ ingredients, cuisine, diet, cookTime }),
+				signal: controller.signal,
+			});
+
+			const data = await res.json();
+			if (!res.ok) throw new Error(data?.error ?? 'Something went wrong.');
+
 			clearTimers();
+			setRecipe(data.recipe as Recipe);
 			setPhase('result');
-		}, 3200);
+		} catch (err) {
+			if (controller.signal.aborted) return; // user cancelled — leave as idle
+			clearTimers();
+			setErrorMsg(err instanceof Error ? err.message : 'Something went wrong.');
+			setPhase('error');
+		} finally {
+			abortRef.current = null;
+		}
 	};
 
 	const cancel = () => {
 		clearTimers();
+		abortRef.current?.abort();
 		setPhase('idle');
 	};
 
@@ -147,10 +182,24 @@ export default function GeneratorClient() {
 				<GeneratingState statusText={STATUS_MESSAGES[statusIndex]} onCancel={cancel} />
 			)}
 
+			{/* Error */}
+			{phase === 'error' && (
+				<div className="flex flex-col items-center gap-3 rounded-[20px] border border-terracotta/30 bg-terracotta/5 p-7 text-center">
+					<p className="text-[15px] font-medium text-terracotta">{errorMsg}</p>
+					<button
+						type="button"
+						onClick={generate}
+						className="rounded-[10px] bg-terracotta px-5 py-2.5 text-[15px] font-semibold text-white no-underline shadow-cta transition-colors hover:bg-terracotta/90"
+					>
+						Try again
+					</button>
+				</div>
+			)}
+
 			{/* Result */}
-			{phase === 'result' && (
+			{phase === 'result' && recipe && (
 				<RecipeCard
-					recipe={MOCK_RECIPE}
+					recipe={recipe}
 					saved={saved}
 					onToggleSave={() => setSaved((s) => !s)}
 				/>

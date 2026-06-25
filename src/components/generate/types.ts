@@ -1,1 +1,1 @@
-export type Phase = "idle" | "loading" | "result";
+export type Phase = "idle" | "loading" | "result" | "error";
