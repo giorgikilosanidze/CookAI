@@ -47,7 +47,7 @@ export default function IngredientInput({ ingredients, onAdd, onRemove }: Props)
 								e.stopPropagation();
 								onRemove(i);
 							}}
-							className="flex h-4.75 w-4.75 items-center justify-center rounded-full bg-terracotta/20 text-xs leading-none text-terracotta"
+							className="flex h-4.75 w-4.75 items-center justify-center rounded-full bg-terracotta/20 text-xs leading-none text-terracotta cursor-pointer"
 						>
 							×
 						</button>

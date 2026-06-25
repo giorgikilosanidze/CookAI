@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { SAVED_RECIPES, type SavedRecipe } from "@/lib/savedRecipes";
+import type { SavedRecipe } from "@/lib/savedRecipes";
 import SavedRecipeCard from "@/components/saved/SavedRecipeCard";
 import RecipeModal from "@/components/saved/RecipeModal";
 import EmptyState from "@/components/saved/EmptyState";
 
 export default function SavedRecipesClient() {
-  const [recipes, setRecipes] = useState<SavedRecipe[]>(SAVED_RECIPES);
+  const [recipes, setRecipes] = useState<SavedRecipe[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
   const handleDelete = (id: number) => {

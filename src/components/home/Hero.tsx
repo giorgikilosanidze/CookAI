@@ -29,12 +29,6 @@ export default function Hero() {
             Get Started
             <ArrowRight size={18} />
           </Link>
-          <Link
-            href="#how-it-works"
-            className="inline-flex items-center rounded-[13px] border-[1.5px] border-line px-6 py-[15px] text-[17px] font-semibold text-subtle no-underline transition-colors hover:border-terracotta hover:text-terracotta"
-          >
-            See how it works
-          </Link>
         </div>
       </div>
 

@@ -13,10 +13,12 @@ export default function CtaBanner() {
 				</p>
 				<Link
 					href="/generate"
-					className="mt-2 inline-flex items-center gap-2 rounded-[13px] bg-surface px-7.5 py-3.75 text-[17px] font-semibold text-terracotta no-underline shadow-[0_6px_16px_rgba(46,42,37,0.18)] transition-colors hover:bg-white"
+					className="group mt-2 inline-flex items-center gap-2 rounded-[13px] bg-surface px-7.5 py-3.75 text-[17px] font-semibold text-terracotta no-underline shadow-[0_6px_16px_rgba(46,42,37,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_12px_28px_rgba(46,42,37,0.26)]"
 				>
 					Generate a recipe
-					<ArrowRight size={18} />
+					<span className="inline-flex transition-transform duration-200 group-hover:translate-x-1">
+						<ArrowRight size={18} />
+					</span>
 				</Link>
 			</div>
 		</section>

@@ -156,7 +156,7 @@ export default function GeneratorClient() {
 					type="button"
 					onClick={generate}
 					disabled={loading}
-					className={`w-full rounded-[13px] py-4.25 text-[17px] font-semibold text-white shadow-[0_4px_14px_rgba(198,93,59,0.30)] transition-colors ${
+					className={`w-full cursor-pointer rounded-[13px] py-4.25 text-[17px] font-semibold text-white shadow-[0_4px_14px_rgba(198,93,59,0.30)] transition-colors ${
 						loading
 							? 'cursor-progress bg-terracotta/90'
 							: 'bg-terracotta hover:bg-terracotta/90'
@@ -189,7 +189,7 @@ export default function GeneratorClient() {
 					<button
 						type="button"
 						onClick={generate}
-						className="rounded-[10px] bg-terracotta px-5 py-2.5 text-[15px] font-semibold text-white no-underline shadow-cta transition-colors hover:bg-terracotta/90"
+						className="rounded-[10px] bg-terracotta px-5 py-2.5 text-[15px] font-semibold text-white no-underline shadow-cta transition-colors hover:bg-terracotta/90 cursor-pointer"
 					>
 						Try again
 					</button>
