@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { useState, type ChangeEvent, type SubmitEvent } from 'react';
+import { signIn } from 'next-auth/react';
 import TextField from '@/components/auth/TextField';
-import Check from '@/components/icons/Check';
 import { PASSWORD_MIN_LENGTH } from '@/lib/validation';
 import { EMPTY_SIGN_UP } from '@/components/auth/constants';
 import { hasErrors, validateSignUp } from '@/components/auth/utils';
@@ -12,7 +12,8 @@ export default function SignUpForm() {
 	const [values, setValues] = useState<SignUpValues>(EMPTY_SIGN_UP);
 	const [errors, setErrors] = useState<FieldErrors<SignUpValues>>({});
 	const [submitted, setSubmitted] = useState(false);
-	const [done, setDone] = useState(false);
+	const [formError, setFormError] = useState('');
+	const [busy, setBusy] = useState(false);
 
 	const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
 		const { name, value } = e.target;
@@ -22,34 +23,39 @@ export default function SignUpForm() {
 		if (submitted) setErrors(validateSignUp(next));
 	};
 
-	const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+	const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
 		e.preventDefault();
+		if (busy) return;
 		setSubmitted(true);
+		setFormError('');
 		const nextErrors = validateSignUp(values);
 		setErrors(nextErrors);
 		if (hasErrors(nextErrors)) return;
 
-		// TODO: replace with NextAuth → signIn("credentials", { ...values })
-		console.log('sign-up (mock):', values);
-		setDone(true);
+		setBusy(true);
+		try {
+			const res = await fetch('/api/signup', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(values),
+			});
+			if (!res.ok) {
+				const data = await res.json().catch(() => null);
+				setFormError(data?.error ?? 'Something went wrong. Please try again.');
+				setBusy(false);
+				return;
+			}
+			// Account created — sign in with the same credentials and go cook.
+			await signIn('credentials', {
+				email: values.email,
+				password: values.password,
+				redirectTo: '/generate',
+			});
+		} catch {
+			setFormError('Something went wrong. Please try again.');
+			setBusy(false);
+		}
 	};
-
-	if (done) {
-		return (
-			<div className="mt-7 flex flex-col items-center gap-3 rounded-lg border border-herb/30 bg-herb/10 px-6 py-8 text-center">
-				<span className="flex h-12 w-12 items-center justify-center rounded-full bg-herb text-white">
-					<Check size={22} />
-				</span>
-				<h2 className="font-serif text-[22px] font-semibold">
-					You&rsquo;re all set, {values.name.trim().split(' ')[0]}!
-				</h2>
-				<p className="max-w-[34ch] text-sm leading-normal text-muted">
-					This is a front-end demo — no account was actually created. Real sign-up gets
-					wired to NextAuth next.
-				</p>
-			</div>
-		);
-	}
 
 	return (
 		<form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
@@ -86,11 +92,17 @@ export default function SignUpForm() {
 				error={errors.password}
 				hint={`At least ${PASSWORD_MIN_LENGTH} characters.`}
 			/>
+			{formError && (
+				<p role="alert" className="text-[13.5px] font-medium text-[#B42318]">
+					{formError}
+				</p>
+			)}
 			<button
 				type="submit"
-				className="mt-1 w-full rounded-md bg-terracotta py-3.5 text-base font-semibold text-white shadow-[0_4px_14px_rgba(198,93,59,0.3)] transition-colors hover:bg-terracotta/90 cursor-pointer"
+				disabled={busy}
+				className="mt-1 w-full rounded-md bg-terracotta py-3.5 text-base font-semibold text-white shadow-[0_4px_14px_rgba(198,93,59,0.3)] transition-colors hover:bg-terracotta/90 cursor-pointer disabled:cursor-default disabled:opacity-70"
 			>
-				Create Account
+				{busy ? 'Creating account…' : 'Create Account'}
 			</button>
 		</form>
 	);

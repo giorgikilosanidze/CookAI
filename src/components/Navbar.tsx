@@ -3,10 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { signOut } from "next-auth/react";
 import Logo from "@/components/Logo";
 import { NAV_LINKS } from "@/components/constants";
 
-export default function Navbar() {
+type Props = {
+  user?: { name?: string | null; email?: string | null } | null;
+};
+
+export default function Navbar({ user }: Props) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -22,6 +27,9 @@ export default function Navbar() {
     active
       ? "rounded-[9px] bg-terracotta/10 px-[14px] py-[11px] text-base font-semibold text-terracotta no-underline"
       : "rounded-[9px] px-[14px] py-[11px] text-base font-medium text-subtle no-underline hover:bg-cream-200";
+
+  const displayName = user?.name?.trim() || user?.email || "";
+  const initial = displayName.charAt(0).toUpperCase();
 
   return (
     <header className="sticky top-0 z-50 w-full">
@@ -41,13 +49,31 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Desktop: sign in */}
-        <Link
-          href="/signin"
-          className="hidden items-center rounded-[10px] bg-terracotta px-5 py-2.5 text-[15px] font-semibold text-white no-underline shadow-cta transition-colors hover:bg-terracotta/90 md:inline-flex"
-        >
-          Sign in
-        </Link>
+        {/* Desktop: session chip + sign out, or sign in */}
+        {user ? (
+          <div className="hidden items-center gap-3 md:flex">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-terracotta/10 text-[15px] font-bold text-terracotta">
+              {initial}
+            </span>
+            <span className="max-w-[16ch] truncate text-[15px] font-semibold text-ink">
+              {displayName}
+            </span>
+            <button
+              type="button"
+              onClick={() => signOut({ redirectTo: "/" })}
+              className="cursor-pointer rounded-[10px] border-[1.5px] border-line bg-surface px-4 py-2 text-[15px] font-semibold text-subtle transition-colors hover:border-terracotta hover:text-terracotta"
+            >
+              Sign out
+            </button>
+          </div>
+        ) : (
+          <Link
+            href="/signin"
+            className="hidden items-center rounded-[10px] bg-terracotta px-5 py-2.5 text-[15px] font-semibold text-white no-underline shadow-cta transition-colors hover:bg-terracotta/90 md:inline-flex"
+          >
+            Sign in
+          </Link>
+        )}
 
         {/* Mobile: hamburger */}
         <button
@@ -77,13 +103,33 @@ export default function Navbar() {
             </Link>
           ))}
           <div className="my-1.5 h-px bg-line" />
-          <Link
-            href="/signin"
-            onClick={() => setMenuOpen(false)}
-            className="block w-full rounded-[10px] bg-terracotta px-3 py-3 text-center text-base font-semibold text-white no-underline"
-          >
-            Sign in
-          </Link>
+          {user ? (
+            <>
+              <div className="flex items-center gap-2.5 px-[14px] py-[7px]">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-terracotta/10 text-sm font-bold text-terracotta">
+                  {initial}
+                </span>
+                <span className="truncate text-base font-semibold text-ink">
+                  {displayName}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => signOut({ redirectTo: "/" })}
+                className="block w-full cursor-pointer rounded-[10px] border-[1.5px] border-line bg-surface px-3 py-3 text-center text-base font-semibold text-subtle"
+              >
+                Sign out
+              </button>
+            </>
+          ) : (
+            <Link
+              href="/signin"
+              onClick={() => setMenuOpen(false)}
+              className="block w-full rounded-[10px] bg-terracotta px-3 py-3 text-center text-base font-semibold text-white no-underline"
+            >
+              Sign in
+            </Link>
+          )}
         </div>
       )}
     </header>

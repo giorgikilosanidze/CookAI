@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { useState, type ChangeEvent, type SubmitEvent } from 'react';
+import { signIn } from 'next-auth/react';
 import TextField from '@/components/auth/TextField';
-import Check from '@/components/icons/Check';
 import { EMPTY_SIGN_IN } from '@/components/auth/constants';
 import { hasErrors, validateSignIn } from '@/components/auth/utils';
 import type { FieldErrors, SignInValues } from '@/components/auth/types';
@@ -11,7 +11,8 @@ export default function SignInForm() {
 	const [values, setValues] = useState<SignInValues>(EMPTY_SIGN_IN);
 	const [errors, setErrors] = useState<FieldErrors<SignInValues>>({});
 	const [submitted, setSubmitted] = useState(false);
-	const [done, setDone] = useState(false);
+	const [formError, setFormError] = useState('');
+	const [busy, setBusy] = useState(false);
 
 	const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
 		const { name, value } = e.target;
@@ -20,32 +21,29 @@ export default function SignInForm() {
 		if (submitted) setErrors(validateSignIn(next));
 	};
 
-	const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+	const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
 		e.preventDefault();
+		if (busy) return;
 		setSubmitted(true);
+		setFormError('');
 		const nextErrors = validateSignIn(values);
 		setErrors(nextErrors);
 		if (hasErrors(nextErrors)) return;
 
-		// TODO: replace with NextAuth → signIn("credentials", { ...values })
-		console.log('sign-in (mock):', values);
-		setDone(true);
+		setBusy(true);
+		const res = await signIn('credentials', {
+			email: values.email,
+			password: values.password,
+			redirect: false,
+		});
+		if (res?.error) {
+			setFormError('Invalid email or password.');
+			setBusy(false);
+			return;
+		}
+		// Full navigation so the server-rendered Navbar picks up the session.
+		window.location.assign('/generate');
 	};
-
-	if (done) {
-		return (
-			<div className="mt-7 flex flex-col items-center gap-3 rounded-lg border border-herb/30 bg-herb/10 px-6 py-8 text-center">
-				<span className="flex h-12 w-12 items-center justify-center rounded-full bg-herb text-white">
-					<Check size={22} />
-				</span>
-				<h2 className="font-serif text-[22px] font-semibold">Welcome back!</h2>
-				<p className="max-w-[34ch] text-sm leading-normal text-muted">
-					This is a front-end demo — no real sign-in happened yet. Auth gets wired to
-					NextAuth next.
-				</p>
-			</div>
-		);
-	}
 
 	return (
 		<form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
@@ -70,20 +68,18 @@ export default function SignInForm() {
 				value={values.password}
 				onChange={handleChange}
 				error={errors.password}
-				labelAccessory={
-					<a
-						href="#"
-						className="text-[12.5px] font-semibold text-terracotta no-underline hover:underline"
-					>
-						Forgot password?
-					</a>
-				}
 			/>
+			{formError && (
+				<p role="alert" className="text-[13.5px] font-medium text-[#B42318]">
+					{formError}
+				</p>
+			)}
 			<button
 				type="submit"
-				className="mt-1 w-full rounded-md bg-terracotta py-3.5 text-base font-semibold text-white shadow-[0_4px_14px_rgba(198,93,59,0.3)] transition-colors hover:bg-terracotta/90 cursor-pointer"
+				disabled={busy}
+				className="mt-1 w-full rounded-md bg-terracotta py-3.5 text-base font-semibold text-white shadow-[0_4px_14px_rgba(198,93,59,0.3)] transition-colors hover:bg-terracotta/90 cursor-pointer disabled:cursor-default disabled:opacity-70"
 			>
-				Sign In
+				{busy ? 'Signing in…' : 'Sign In'}
 			</button>
 		</form>
 	);

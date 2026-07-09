@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState, type KeyboardEvent } from 'react';
+import { MAX_INGREDIENTS, MAX_INGREDIENT_LENGTH } from '@/lib/constants';
 
 type Props = {
 	ingredients: string[];
@@ -65,6 +66,7 @@ export default function IngredientInput({ ingredients, onAdd, onRemove }: Props)
 						}
 					}}
 					onKeyDown={onKeyDown}
+					maxLength={MAX_INGREDIENT_LENGTH}
 					placeholder={
 						ingredients.length ? 'Add another…' : 'e.g. chicken, rice, onion, garlic'
 					}
@@ -72,7 +74,7 @@ export default function IngredientInput({ ingredients, onAdd, onRemove }: Props)
 				/>
 			</div>
 			<span className="text-[13px] text-faint">
-				Press Enter or comma to add each ingredient.
+				Press Enter or comma to add each ingredient. Up to {MAX_INGREDIENTS}.
 			</span>
 		</div>
 	);

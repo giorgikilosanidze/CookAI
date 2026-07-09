@@ -4,19 +4,33 @@ import SaveButton from "@/components/SaveButton";
 
 type Props = {
   recipe: Recipe;
+  imageUrl?: string | null;
   saved: boolean;
   onToggleSave: () => void;
 };
 
-export default function RecipeCard({ recipe, saved, onToggleSave }: Props) {
+export default function RecipeCard({ recipe, imageUrl, saved, onToggleSave }: Props) {
   return (
     <article className="relative animate-fade-up overflow-hidden rounded-[22px] border border-line bg-surface shadow-[0_10px_36px_rgba(46,42,37,0.09)]">
-      {/* Dish photo placeholder */}
-      <div className="relative flex h-50 items-center justify-center bg-[repeating-linear-gradient(135deg,#F0E3D3,#F0E3D3_13px,#EAD9C6_13px,#EAD9C6_26px)]">
-        <span className="font-mono text-xs uppercase tracking-[0.12em] text-faint">
-          dish photo
-        </span>
-        <div className="absolute inset-0 bg-linear-to-b from-transparent from-55% to-surface/85" />
+      {/* Dish photo — the striped block only shows if image generation failed */}
+      <div className="relative flex h-70 items-center justify-center bg-[repeating-linear-gradient(135deg,#F0E3D3,#F0E3D3_13px,#EAD9C6_13px,#EAD9C6_26px)] sm:h-90">
+        {imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- data URI; next/image doesn't support them
+          <img
+            src={imageUrl}
+            alt={recipe.title}
+            className="absolute inset-0 h-full w-full animate-fade-up object-cover"
+          />
+        ) : (
+          <span className="font-mono text-xs uppercase tracking-[0.12em] text-faint">
+            dish photo
+          </span>
+        )}
+        <div
+          className={`absolute inset-0 bg-linear-to-b from-transparent ${
+            imageUrl ? 'from-75% to-surface/45' : 'from-55% to-surface/85'
+          }`}
+        />
         <div className="absolute right-4 top-4">
           <SaveButton variant="floating" saved={saved} onToggleSave={onToggleSave} />
         </div>

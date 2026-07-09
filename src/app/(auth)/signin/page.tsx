@@ -1,5 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { auth, googleEnabled } from "@/lib/auth";
 import AuthCard from "@/components/auth/AuthCard";
 import GoogleButton from "@/components/auth/GoogleButton";
 import AuthDivider from "@/components/auth/AuthDivider";
@@ -9,14 +11,20 @@ export const metadata: Metadata = {
   title: "Sign in · CookAI",
 };
 
-export default function SignInPage() {
+export default async function SignInPage() {
+  if (await auth()) redirect("/generate");
+
   return (
     <AuthCard
       title="Welcome back"
       subtitle="Sign in to get back to your saved recipes."
     >
-      <GoogleButton label="Continue with Google" />
-      <AuthDivider />
+      {googleEnabled && (
+        <>
+          <GoogleButton label="Continue with Google" />
+          <AuthDivider />
+        </>
+      )}
       <SignInForm />
       <p className="mt-6 text-center text-[14.5px] text-muted">
         Don&rsquo;t have an account?{" "}

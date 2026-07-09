@@ -10,7 +10,7 @@ type Props = {
   recipe: SavedRecipe;
   index: number;
   onClose: () => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: string) => void;
 };
 
 export default function RecipeModal({
@@ -45,12 +45,24 @@ export default function RecipeModal({
         onClick={(e) => e.stopPropagation()}
         className="relative w-full max-w-[720px] animate-modal overflow-hidden rounded-[22px] bg-surface shadow-[0_24px_60px_rgba(46,42,37,0.3)]"
       >
-        {/* Header */}
+        {/* Header — stored photo, or the striped placeholder when none */}
         <div
-          className="relative h-[190px]"
-          style={{ background: thumbGradient(index) }}
+          className="relative h-[220px]"
+          style={recipe.imageData ? undefined : { background: thumbGradient(index) }}
         >
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent from-55% to-surface/85" />
+          {recipe.imageData && (
+            // eslint-disable-next-line @next/next/no-img-element -- data URI; next/image doesn't support them
+            <img
+              src={recipe.imageData}
+              alt={recipe.title}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          )}
+          <div
+            className={`absolute inset-0 bg-gradient-to-b from-transparent ${
+              recipe.imageData ? "from-75% to-surface/45" : "from-55% to-surface/85"
+            }`}
+          />
           <button
             type="button"
             aria-label="Close"

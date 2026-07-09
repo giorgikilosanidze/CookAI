@@ -7,8 +7,8 @@ import RecipeMeta from "@/components/RecipeMeta";
 type Props = {
   recipe: SavedRecipe;
   index: number;
-  onOpen: (id: number) => void;
-  onDelete: (id: number) => void;
+  onOpen: (id: string) => void;
+  onDelete: (id: string) => void;
 };
 
 export default function SavedRecipeCard({
@@ -32,14 +32,23 @@ export default function SavedRecipeCard({
       onKeyDown={onKeyDown}
       className="group relative cursor-pointer overflow-hidden rounded-[18px] border border-line bg-surface shadow-[0_4px_16px_rgba(46,42,37,0.06)] transition-[transform,box-shadow] duration-150 hover:-translate-y-[3px] hover:shadow-[0_14px_34px_rgba(46,42,37,0.13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terracotta"
     >
-      {/* Thumbnail */}
+      {/* Thumbnail — stored photo, or the striped placeholder when none */}
       <div
         className="relative h-[148px]"
-        style={{ background: thumbGradient(index) }}
+        style={recipe.imageData ? undefined : { background: thumbGradient(index) }}
       >
-        <span className="absolute bottom-3 left-3.5 font-mono text-[10px] uppercase tracking-[0.12em] text-faint opacity-55 transition-opacity group-hover:opacity-85">
-          dish photo
-        </span>
+        {recipe.imageData ? (
+          // eslint-disable-next-line @next/next/no-img-element -- data URI; next/image doesn't support them
+          <img
+            src={recipe.imageData}
+            alt={recipe.title}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ) : (
+          <span className="absolute bottom-3 left-3.5 font-mono text-[10px] uppercase tracking-[0.12em] text-faint opacity-55 transition-opacity group-hover:opacity-85">
+            dish photo
+          </span>
+        )}
         <button
           type="button"
           title="Delete recipe"

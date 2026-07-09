@@ -4,12 +4,20 @@ import { useEffect, useRef, useState } from 'react';
 import IngredientInput from '@/components/generate/IngredientInput';
 import FilterSelect from '@/components/generate/FilterSelect';
 import GeneratingState from '@/components/generate/GeneratingState';
+import RecipeTweaker from '@/components/generate/RecipeTweaker';
 import RecipeCard from '@/components/RecipeCard';
+import Refresh from '@/components/icons/Refresh';
 import { CUISINES, DIETS, COOK_TIMES, STATUS_MESSAGES } from '@/components/generate/constants';
+import { downscaleImage } from '@/components/generate/utils';
+import { MAX_AVOID_TITLES, MAX_INGREDIENTS, MAX_INGREDIENT_LENGTH } from '@/lib/constants';
 import type { Phase } from '@/components/generate/types';
 import type { Recipe } from '@/lib/types';
 
-export default function GeneratorClient() {
+type Props = {
+	signedIn: boolean;
+};
+
+export default function GeneratorClient({ signedIn }: Props) {
 	const [ingredients, setIngredients] = useState<string[]>([
 		'chicken',
 		'rice',
@@ -23,11 +31,20 @@ export default function GeneratorClient() {
 	const [phase, setPhase] = useState<Phase>('idle');
 	const [statusIndex, setStatusIndex] = useState(0);
 	const [saved, setSaved] = useState(false);
+	const [savedId, setSavedId] = useState<string | null>(null);
+	const [saving, setSaving] = useState(false);
 	const [recipe, setRecipe] = useState<Recipe | null>(null);
 	const [errorMsg, setErrorMsg] = useState('');
+	const [tweaking, setTweaking] = useState(false);
+	const [tweakError, setTweakError] = useState('');
+	const [imageUrl, setImageUrl] = useState<string | null>(null);
 
 	const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 	const abortRef = useRef<AbortController | null>(null);
+	const imageAbortRef = useRef<AbortController | null>(null);
+	// Titles the user passed on via "Try another" — sent so Gemini doesn't
+	// serve a reworded repeat. Cleared when a fresh generation starts.
+	const avoidRef = useRef<string[]>([]);
 
 	const clearTimers = () => {
 		if (intervalRef.current) clearInterval(intervalRef.current);
@@ -38,13 +55,40 @@ export default function GeneratorClient() {
 		() => () => {
 			clearTimers();
 			abortRef.current?.abort();
+			imageAbortRef.current?.abort();
 		},
 		[],
 	);
 
+	// Fetch a dish photo for a recipe. Resolves to a data URI, or null on
+	// failure/cancel — callers decide what to show instead.
+	const fetchImage = async (target: Recipe): Promise<string | null> => {
+		imageAbortRef.current?.abort();
+		const controller = new AbortController();
+		imageAbortRef.current = controller;
+
+		try {
+			const res = await fetch('/api/recipe-image', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ title: target.title, description: target.description }),
+				signal: controller.signal,
+			});
+			if (!res.ok) return null;
+			const data = await res.json();
+			return typeof data.image === 'string' ? data.image : null;
+		} catch {
+			return null;
+		}
+	};
+
 	const addIngredient = (value: string) => {
+		const trimmed = value.slice(0, MAX_INGREDIENT_LENGTH);
 		setIngredients((prev) =>
-			prev.some((x) => x.toLowerCase() === value.toLowerCase()) ? prev : [...prev, value],
+			prev.length >= MAX_INGREDIENTS ||
+			prev.some((x) => x.toLowerCase() === trimmed.toLowerCase())
+				? prev
+				: [...prev, trimmed],
 		);
 	};
 
@@ -63,7 +107,9 @@ export default function GeneratorClient() {
 
 		clearTimers();
 		setSaved(false);
+		setSavedId(null);
 		setErrorMsg('');
+		setTweakError('');
 		setStatusIndex(0);
 		setPhase('loading');
 
@@ -78,15 +124,23 @@ export default function GeneratorClient() {
 			const res = await fetch('/api/generate', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ ingredients, cuisine, diet, cookTime }),
+				body: JSON.stringify({ ingredients, cuisine, diet, cookTime, avoid: avoidRef.current }),
 				signal: controller.signal,
 			});
 
 			const data = await res.json();
 			if (!res.ok) throw new Error(data?.error ?? 'Something went wrong.');
 
+			// Recipe is ready — generate its photo before revealing the card, so
+			// the result never shows a placeholder that swaps to an image later.
+			const next = data.recipe as Recipe;
+			setRecipe(next);
 			clearTimers();
-			setRecipe(data.recipe as Recipe);
+			setStatusIndex(STATUS_MESSAGES.length - 1); // "Plating it up…"
+			const image = await fetchImage(next);
+			if (imageAbortRef.current?.signal.aborted) return; // cancelled mid-photo
+
+			setImageUrl(image);
 			setPhase('result');
 		} catch (err) {
 			if (controller.signal.aborted) return; // user cancelled — leave as idle
@@ -98,10 +152,104 @@ export default function GeneratorClient() {
 		}
 	};
 
+	// Persist (or remove) the current recipe for the signed-in user.
+	const toggleSave = async () => {
+		if (!recipe || saving) return;
+		if (!signedIn) {
+			window.location.assign('/signin');
+			return;
+		}
+
+		setSaving(true);
+		try {
+			if (savedId) {
+				const res = await fetch(`/api/recipes/${savedId}`, { method: 'DELETE' });
+				if (res.ok || res.status === 404) {
+					setSavedId(null);
+					setSaved(false);
+				}
+			} else {
+				// Ship a downscaled thumbnail, not the ~1 MB generated photo.
+				let image: string | undefined;
+				if (imageUrl) {
+					try {
+						image = await downscaleImage(imageUrl);
+					} catch {
+						image = undefined;
+					}
+				}
+				const res = await fetch('/api/recipes', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ recipe, image }),
+				});
+				const data = await res.json();
+				if (res.ok && typeof data.id === 'string') {
+					setSavedId(data.id);
+					setSaved(true);
+				}
+			}
+		} catch {
+			// leave the button state unchanged — the user can retry
+		} finally {
+			setSaving(false);
+		}
+	};
+
+	// "Try another": remember the rejected title, then rerun the same request.
+	const tryAnother = () => {
+		if (!recipe) return;
+		avoidRef.current = [...avoidRef.current, recipe.title].slice(-MAX_AVOID_TITLES);
+		generate();
+	};
+
 	const cancel = () => {
 		clearTimers();
 		abortRef.current?.abort();
+		imageAbortRef.current?.abort();
 		setPhase('idle');
+	};
+
+	// Adjust the current recipe via the same endpoint's tweak mode; the card
+	// stays visible while the update runs.
+	const tweak = async (text: string) => {
+		if (tweaking || !recipe) return;
+		setTweakError('');
+		setTweaking(true);
+
+		const controller = new AbortController();
+		abortRef.current = controller;
+
+		try {
+			const res = await fetch('/api/generate', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ tweak: text, baseRecipe: recipe }),
+				signal: controller.signal,
+			});
+
+			const data = await res.json();
+			if (!res.ok) throw new Error(data?.error ?? 'Something went wrong.');
+
+			const next = data.recipe as Recipe;
+			// A tweak that renames the dish (e.g. chicken → mushroom) needs a new
+			// photo; the old one stays on screen until the replacement is ready.
+			if (recipe && next.title !== recipe.title) {
+				fetchImage(next).then((image) => {
+					if (image) setImageUrl(image);
+				});
+			}
+			setRecipe(next);
+			// The dish changed, so any previous save no longer describes it.
+			setSaved(false);
+			setSavedId(null);
+		} catch (err) {
+			if (controller.signal.aborted) return;
+			setTweakError(err instanceof Error ? err.message : 'Something went wrong.');
+		} finally {
+			if (!controller.signal.aborted) setTweaking(false);
+			abortRef.current = null;
+		}
 	};
 
 	const loading = phase === 'loading';
@@ -154,7 +302,10 @@ export default function GeneratorClient() {
 
 				<button
 					type="button"
-					onClick={generate}
+					onClick={() => {
+						avoidRef.current = [];
+						generate();
+					}}
 					disabled={loading}
 					className={`w-full cursor-pointer rounded-[13px] py-4.25 text-[17px] font-semibold text-white shadow-[0_4px_14px_rgba(198,93,59,0.30)] transition-colors ${
 						loading
@@ -198,11 +349,24 @@ export default function GeneratorClient() {
 
 			{/* Result */}
 			{phase === 'result' && recipe && (
-				<RecipeCard
-					recipe={recipe}
-					saved={saved}
-					onToggleSave={() => setSaved((s) => !s)}
-				/>
+				<>
+					<RecipeCard
+						recipe={recipe}
+						imageUrl={imageUrl}
+						saved={saved}
+						onToggleSave={toggleSave}
+					/>
+					<RecipeTweaker onTweak={tweak} busy={tweaking} error={tweakError} />
+					<button
+						type="button"
+						onClick={tryAnother}
+						disabled={tweaking}
+						className="mx-auto inline-flex cursor-pointer items-center gap-2 text-[15px] font-semibold text-subtle transition-colors hover:text-terracotta disabled:cursor-default disabled:opacity-60"
+					>
+						<Refresh size={16} />
+						Not feeling it? Try another recipe
+					</button>
+				</>
 			)}
 		</div>
 	);

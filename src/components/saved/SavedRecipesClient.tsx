@@ -6,13 +6,30 @@ import SavedRecipeCard from "@/components/saved/SavedRecipeCard";
 import RecipeModal from "@/components/saved/RecipeModal";
 import EmptyState from "@/components/saved/EmptyState";
 
-export default function SavedRecipesClient() {
-  const [recipes, setRecipes] = useState<SavedRecipe[]>([]);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+type Props = {
+  initialRecipes: SavedRecipe[];
+};
 
-  const handleDelete = (id: number) => {
-    setRecipes((prev) => prev.filter((r) => r.id !== id));
-    setSelectedId((current) => (current === id ? null : current));
+export default function SavedRecipesClient({ initialRecipes }: Props) {
+  const [recipes, setRecipes] = useState<SavedRecipe[]>(initialRecipes);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDelete = async (id: string) => {
+    if (deletingId) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/recipes/${id}`, { method: "DELETE" });
+      // 404 means it's already gone — drop it from the grid either way.
+      if (res.ok || res.status === 404) {
+        setRecipes((prev) => prev.filter((r) => r.id !== id));
+        setSelectedId((current) => (current === id ? null : current));
+      }
+    } catch {
+      // network hiccup — keep the card so the user can retry
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const count = recipes.length;

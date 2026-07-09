@@ -18,6 +18,14 @@ export const COOK_TIMES = [
 export const SHIMMER =
   "bg-[linear-gradient(90deg,#EFE6D8_25%,#F7F1E7_50%,#EFE6D8_75%)] bg-[length:200%_100%] animate-shimmer";
 
+// Quick one-tap tweaks offered under a generated recipe.
+export const TWEAK_SUGGESTIONS = [
+	"Make it vegetarian",
+	"Make it spicier",
+	"Simpler steps",
+	"Under 30 minutes",
+];
+
 // Rotating status lines shown while a recipe is being generated.
 export const STATUS_MESSAGES = [
   "Looking through your pantry…",

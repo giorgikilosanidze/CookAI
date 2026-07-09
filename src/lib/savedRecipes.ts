@@ -1,8 +1,8 @@
 import type { Recipe } from "@/lib/types";
 
-// A saved recipe is a Recipe with a stable id. Its `description` carries the
-// short snippet shown on the grid card and in the modal lead.
-export type SavedRecipe = Recipe & { id: number };
+// A saved recipe as the client sees it: a Recipe with its database id and
+// the stored thumbnail (JPEG data URI, null when the photo wasn't saved).
+export type SavedRecipe = Recipe & { id: string; imageData: string | null };
 
 // Decorative stripe palettes for the dish-photo placeholders, varied per card.
 const STRIPES: [string, string][] = [
