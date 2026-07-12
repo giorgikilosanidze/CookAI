@@ -1,7 +1,9 @@
+import Image from "next/image";
 import ArrowDown from "@/components/icons/ArrowDown";
 import Bowl from "@/components/icons/Bowl";
 import Clock from "@/components/icons/Clock";
 import { INGREDIENTS } from "@/components/home/constants";
+import heroDish from "../../../public/hero-dish.jpg";
 
 export default function KitchenCard() {
   return (
@@ -33,10 +35,15 @@ export default function KitchenCard() {
       </div>
 
       <div className="overflow-hidden rounded-xl border border-line">
-        <div className="relative h-[118px] bg-[repeating-linear-gradient(135deg,#F0E3D3,#F0E3D3_13px,#EAD9C6_13px,#EAD9C6_26px)]">
-          <span className="absolute bottom-[11px] left-[13px] font-mono text-[10px] uppercase tracking-[0.12em] text-faint">
-            dish photo
-          </span>
+        <div className="relative h-[118px]">
+          <Image
+            src={heroDish}
+            alt="Golden Chicken & Herb Rice Skillet"
+            fill
+            sizes="420px"
+            placeholder="blur"
+            className="object-cover"
+          />
         </div>
         <div className="px-4 pb-[17px] pt-[15px]">
           <h3 className="font-serif text-xl font-semibold leading-tight text-ink">

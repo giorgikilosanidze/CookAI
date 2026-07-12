@@ -18,12 +18,7 @@ type Props = {
 };
 
 export default function GeneratorClient({ signedIn }: Props) {
-	const [ingredients, setIngredients] = useState<string[]>([
-		'chicken',
-		'rice',
-		'onion',
-		'garlic',
-	]);
+	const [ingredients, setIngredients] = useState<string[]>([]);
 	const [cuisine, setCuisine] = useState('Any');
 	const [diet, setDiet] = useState('None');
 	const [cookTime, setCookTime] = useState('Any');
