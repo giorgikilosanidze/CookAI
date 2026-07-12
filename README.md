@@ -2,7 +2,7 @@
 
 Tell CookAI the ingredients you have on hand and it writes a complete recipe in seconds — exact amounts, numbered steps, and an AI-generated photo of the dish. Save the ones you love to your personal cookbook and share them with a link.
 
-**[Live demo →](https://cookai.vercel.app)** &nbsp;·&nbsp; try it without signing up, or use the demo account below to see the cookbook.
+**[Live demo →](https://cook-ai-sooty.vercel.app)** &nbsp;·&nbsp; try it without signing up, or use the demo account below to see the cookbook.
 
 > **Demo account** — `demo@cookai.app` / `demo1234` (comes with a few saved recipes to browse)
 
@@ -16,8 +16,8 @@ Tell CookAI the ingredients you have on hand and it writes a complete recipe in 
 - **Save & share** — signed-in users can save recipes to their cookbook; every saved recipe has a public share link (`/recipe/…`) with proper Open Graph previews and schema.org `Recipe` structured data.
 - **Auth** — email + password or Google sign-in.
 
-| Generate | Shared recipe page |
-| --- | --- |
+| Generate                            | Shared recipe page                    |
+| ----------------------------------- | ------------------------------------- |
 | ![Generate page](docs/generate.png) | ![Recipe share page](docs/recipe.png) |
 
 ## Tech stack
@@ -44,14 +44,14 @@ npm run dev
 
 Create `.env.local` with:
 
-| Variable | Purpose |
-| --- | --- |
-| `DATABASE_URL` | Neon Postgres connection string (pooled) |
-| `AUTH_SECRET` | Auth.js session secret (`npx auth secret`) |
-| `GEMINI_API_KEY` | Google AI Studio key for recipe generation |
-| `CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_API_TOKEN` | Workers AI credentials for dish photos |
-| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | *(optional)* Google OAuth — the button hides itself when unset |
-| `NEXT_PUBLIC_SITE_URL` | *(optional)* canonical origin for SEO metadata; on Vercel it falls back to the production domain automatically |
+| Variable                                         | Purpose                                                                                                        |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                                   | Neon Postgres connection string (pooled)                                                                       |
+| `AUTH_SECRET`                                    | Auth.js session secret (`npx auth secret`)                                                                     |
+| `GEMINI_API_KEY`                                 | Google AI Studio key for recipe generation                                                                     |
+| `CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_API_TOKEN` | Workers AI credentials for dish photos                                                                         |
+| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`          | _(optional)_ Google OAuth — the button hides itself when unset                                                 |
+| `NEXT_PUBLIC_SITE_URL`                           | _(optional)_ canonical origin for SEO metadata; on Vercel it falls back to the production domain automatically |
 
 Then apply the schema with `npx prisma migrate dev` and open http://localhost:3000.
 
