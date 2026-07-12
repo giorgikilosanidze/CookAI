@@ -37,6 +37,9 @@ export default function GeneratorClient({ signedIn }: Props) {
 	const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 	const abortRef = useRef<AbortController | null>(null);
 	const imageAbortRef = useRef<AbortController | null>(null);
+	// The area below the form (loading card / result) — scrolled into view on
+	// generate so the user sees progress without scrolling manually.
+	const outputRef = useRef<HTMLDivElement | null>(null);
 	// Titles the user passed on via "Try another" — sent so Gemini doesn't
 	// serve a reworded repeat. Cleared when a fresh generation starts.
 	const avoidRef = useRef<string[]>([]);
@@ -54,6 +57,13 @@ export default function GeneratorClient({ signedIn }: Props) {
 		},
 		[],
 	);
+
+	// Bring the loading card into view once it renders.
+	useEffect(() => {
+		if (phase === 'loading') {
+			outputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		}
+	}, [phase]);
 
 	// Fetch a dish photo for a recipe. Resolves to a data URI, or null on
 	// failure/cancel — callers decide what to show instead.
@@ -325,7 +335,9 @@ export default function GeneratorClient({ signedIn }: Props) {
 
 			{/* Loading state */}
 			{loading && (
-				<GeneratingState statusText={STATUS_MESSAGES[statusIndex]} onCancel={cancel} />
+				<div ref={outputRef} className="scroll-mt-24">
+					<GeneratingState statusText={STATUS_MESSAGES[statusIndex]} onCancel={cancel} />
+				</div>
 			)}
 
 			{/* Error */}
@@ -349,6 +361,7 @@ export default function GeneratorClient({ signedIn }: Props) {
 						recipe={recipe}
 						imageUrl={imageUrl}
 						saved={saved}
+						canSave={signedIn}
 						onToggleSave={toggleSave}
 					/>
 					<RecipeTweaker onTweak={tweak} busy={tweaking} error={tweakError} />
