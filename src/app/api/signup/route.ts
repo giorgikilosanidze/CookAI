@@ -3,8 +3,18 @@ import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
 import { validateEmail, validateName, validatePassword } from "@/lib/validation";
+import { clientIp, rateLimit } from "@/lib/rateLimit";
 
 export async function POST(request: Request) {
+  // Slow down scripted account creation.
+  const limited = rateLimit(`signup:${clientIp(request)}`, 5, 10 * 60_000);
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Too many signup attempts — try again in a few minutes." },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSeconds) } },
+    );
+  }
+
   let body: Record<string, unknown>;
   try {
     body = await request.json();

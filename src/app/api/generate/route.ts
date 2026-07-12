@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateRecipe, isRecipe } from "@/lib/generateRecipe";
+import { clientIp, rateLimit } from "@/lib/rateLimit";
 import {
   MAX_AVOID_TITLES,
   MAX_INGREDIENTS,
@@ -8,6 +9,15 @@ import {
 } from "@/lib/constants";
 
 export async function POST(request: Request) {
+  // Generation calls Gemini, which costs quota — cap requests per client.
+  const limited = rateLimit(`generate:${clientIp(request)}`, 8, 60_000);
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Too many requests — give it a minute and try again." },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSeconds) } },
+    );
+  }
+
   let body: Record<string, unknown>;
   try {
     body = await request.json();

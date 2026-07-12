@@ -26,9 +26,11 @@ export default function RecipeDetails({ recipe }: { recipe: Recipe }) {
             Ingredients
           </h3>
           <div className="flex flex-col">
-            {recipe.ingredients.map((ing) => (
+            {recipe.ingredients.map((ing, i) => (
               <div
-                key={ing.name}
+                // Ingredient names aren't unique (e.g. two "to taste" rows),
+                // and the list is static — index keys are safe here.
+                key={i}
                 className="flex gap-3.5 border-b border-line py-[9px]"
               >
                 <span className="w-[88px] flex-none text-[15px] font-semibold text-terracotta">

@@ -1,7 +1,17 @@
 import { NextResponse } from "next/server";
 import { generateRecipeImage } from "@/lib/generateRecipeImage";
+import { clientIp, rateLimit } from "@/lib/rateLimit";
 
 export async function POST(request: Request) {
+  // Image generation burns Cloudflare Workers AI credits — cap per client.
+  const limited = rateLimit(`recipe-image:${clientIp(request)}`, 8, 60_000);
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Too many requests — give it a minute and try again." },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSeconds) } },
+    );
+  }
+
   let body: Record<string, unknown>;
   try {
     body = await request.json();

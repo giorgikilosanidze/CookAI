@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Hanken_Grotesk, Newsreader } from "next/font/google";
+import { SITE_URL } from "@/lib/siteUrl";
 import "./globals.css";
 
 // Body — Hanken Grotesk (400 / 500 / 600 / 700)
@@ -19,10 +20,38 @@ const newsreader = Newsreader({
   display: "swap",
 });
 
+const DESCRIPTION =
+  "Tell CookAI what's in your kitchen and get a complete AI-generated recipe in seconds — exact amounts, clear steps, and a photo of the dish.";
+
 export const metadata: Metadata = {
-  title: "CookAI",
-  description:
-    "Tell us what's in your kitchen — CookAI turns it into something worth making.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "CookAI — Turn your ingredients into recipes with AI",
+    template: "%s · CookAI",
+  },
+  description: DESCRIPTION,
+  applicationName: "CookAI",
+  keywords: [
+    "AI recipe generator",
+    "recipe from ingredients",
+    "what to cook",
+    "cooking ideas",
+    "meal ideas",
+  ],
+  openGraph: {
+    type: "website",
+    siteName: "CookAI",
+    url: "/",
+    title: "CookAI — Turn your ingredients into recipes with AI",
+    description: DESCRIPTION,
+    images: [{ url: "/og.jpg", width: 1200, height: 630, alt: "CookAI" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "CookAI — Turn your ingredients into recipes with AI",
+    description: DESCRIPTION,
+    images: ["/og.jpg"],
+  },
 };
 
 export default function RootLayout({

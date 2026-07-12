@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { signOut } from "next-auth/react";
 import Logo from "@/components/Logo";
+import Account from "@/components/icons/Account";
 import { NAV_LINKS } from "@/components/constants";
 
 type Props = {
@@ -29,7 +30,6 @@ export default function Navbar({ user }: Props) {
       : "rounded-[9px] px-[14px] py-[11px] text-base font-medium text-subtle no-underline hover:bg-cream-200";
 
   const displayName = user?.name?.trim() || user?.email || "";
-  const initial = displayName.charAt(0).toUpperCase();
 
   return (
     <header className="sticky top-0 z-50 w-full">
@@ -52,10 +52,8 @@ export default function Navbar({ user }: Props) {
         {/* Desktop: session chip + sign out, or sign in */}
         {user ? (
           <div className="hidden items-center gap-3 md:flex">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-terracotta/10 text-[15px] font-bold text-terracotta">
-              {initial}
-            </span>
-            <span className="max-w-[16ch] truncate text-[15px] font-semibold text-ink">
+            <Account size={24} className="text-terracotta" />
+            <span className="max-w-[16ch] truncate text-[15px] font-semibold text-terracotta">
               {displayName}
             </span>
             <button
@@ -106,10 +104,8 @@ export default function Navbar({ user }: Props) {
           {user ? (
             <>
               <div className="flex items-center gap-2.5 px-[14px] py-[7px]">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-terracotta/10 text-sm font-bold text-terracotta">
-                  {initial}
-                </span>
-                <span className="truncate text-base font-semibold text-ink">
+                <Account size={22} className="text-terracotta" />
+                <span className="truncate text-base font-semibold text-terracotta">
                   {displayName}
                 </span>
               </div>

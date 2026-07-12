@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import type { SavedRecipe } from "@/lib/savedRecipes";
 import { thumbGradient } from "@/lib/savedRecipes";
+import ArrowRight from "@/components/icons/ArrowRight";
 import Trash from "@/components/icons/Trash";
 import RecipeDetails from "@/components/RecipeDetails";
+import ShareButton from "@/components/recipe/ShareButton";
 
 type Props = {
   recipe: SavedRecipe;
@@ -81,11 +84,21 @@ export default function RecipeModal({
 
           <RecipeDetails recipe={recipe} />
 
-          <div className="mt-7 flex justify-end border-t border-line pt-[22px]">
+          <div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-[22px]">
+            <div className="flex flex-wrap items-center gap-3">
+              <ShareButton path={`/recipe/${recipe.id}`} />
+              <Link
+                href={`/recipe/${recipe.id}`}
+                className="inline-flex items-center gap-2 rounded-[11px] border-[1.5px] border-line bg-transparent px-[18px] py-[11px] text-[15px] font-semibold text-muted no-underline transition-colors hover:border-terracotta hover:text-terracotta"
+              >
+                Open full page
+                <ArrowRight size={15} />
+              </Link>
+            </div>
             <button
               type="button"
               onClick={() => onDelete(recipe.id)}
-              className="inline-flex items-center gap-2 rounded-[11px] border-[1.5px] border-line bg-transparent px-[18px] py-[11px] text-[15px] font-semibold text-muted transition-colors hover:border-terracotta hover:text-terracotta"
+              className="inline-flex cursor-pointer items-center gap-2 rounded-[11px] border-[1.5px] border-line bg-transparent px-[18px] py-[11px] text-[15px] font-semibold text-muted transition-colors hover:border-terracotta hover:text-terracotta"
             >
               <Trash size={15} />
               Remove from saved
