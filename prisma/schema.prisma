@@ -24,8 +24,8 @@ model User {
 }
 
 // A recipe the user chose to keep. Ingredients/steps mirror the `Recipe`
-// type; `imageData` is a downscaled JPEG data URI (~60-100 KB), not the
-// full generated photo.
+// type; `imageData` is the public Vercel Blob URL of the full-size dish
+// photo (null when the photo wasn't saved).
 model SavedRecipe {
   id          String   @id @default(cuid())
   userId      String

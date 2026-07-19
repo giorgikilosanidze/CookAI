@@ -3,9 +3,22 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isRecipe } from "@/lib/generateRecipe";
 
-// Downscaled thumbnails run ~60-100 KB; this cap allows the full-size photo
-// as a fallback while blocking anything abusive.
-const MAX_IMAGE_DATA_LENGTH = 1_500_000;
+const MAX_IMAGE_URL_LENGTH = 500;
+
+// Only photos we hosted ourselves — an arbitrary external URL would let a
+// crafted request make share pages embed content we don't control.
+function isBlobUrl(value: string): boolean {
+  if (value.length > MAX_IMAGE_URL_LENGTH) return false;
+  try {
+    const url = new URL(value);
+    return (
+      url.protocol === "https:" &&
+      url.hostname.endsWith(".public.blob.vercel-storage.com")
+    );
+  } catch {
+    return false;
+  }
+}
 
 export async function GET() {
   const session = await auth();
@@ -40,11 +53,7 @@ export async function POST(request: Request) {
   const recipe = body.recipe;
 
   const image =
-    typeof body.image === "string" &&
-    body.image.startsWith("data:image/") &&
-    body.image.length <= MAX_IMAGE_DATA_LENGTH
-      ? body.image
-      : null;
+    typeof body.image === "string" && isBlobUrl(body.image) ? body.image : null;
 
   try {
     const saved = await prisma.savedRecipe.create({

@@ -30,6 +30,8 @@ export function recipeJsonLd(recipe: SavedRecipe, url: string) {
     "@type": "Recipe",
     name: recipe.title,
     description: recipe.description,
+    // Google's recipe rich results require an image.
+    ...(recipe.imageData ? { image: recipe.imageData } : {}),
     recipeYield: recipe.servings,
     ...(minutes ? { totalTime: `PT${minutes}M` } : {}),
     recipeIngredient: recipe.ingredients.map((ing) =>

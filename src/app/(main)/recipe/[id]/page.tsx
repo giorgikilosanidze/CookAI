@@ -19,6 +19,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const description =
     recipe.description || `${recipe.title} — an AI-generated recipe from CookAI.`;
+  // Blob-hosted dish photo when the recipe has one, otherwise the generic
+  // site banner.
+  const ogImage = recipe.imageData
+    ? { url: recipe.imageData, width: 1024, height: 1024, alt: recipe.title }
+    : { url: "/og.jpg", width: 1200, height: 630, alt: "CookAI" };
   return {
     title: recipe.title,
     description,
@@ -29,13 +34,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       url: `/recipe/${id}`,
       title: recipe.title,
       description,
-      images: [{ url: "/og.jpg", width: 1200, height: 630, alt: "CookAI" }],
+      images: [ogImage],
     },
     twitter: {
       card: "summary_large_image",
       title: recipe.title,
       description,
-      images: ["/og.jpg"],
+      images: [ogImage.url],
     },
   };
 }
@@ -56,13 +61,13 @@ export default async function RecipePage({ params }: Props) {
         }}
       />
       <article className="overflow-hidden rounded-[22px] border border-line bg-surface shadow-[0_10px_36px_rgba(46,42,37,0.09)]">
-        {/* Dish photo — stored thumbnail, or the striped placeholder */}
+        {/* Dish photo — Blob-hosted, or the striped placeholder */}
         <div
           className="relative h-55 sm:h-70"
           style={recipe.imageData ? undefined : { background: thumbGradient(0) }}
         >
           {recipe.imageData && (
-            // eslint-disable-next-line @next/next/no-img-element -- data URI; next/image doesn't support them
+            // eslint-disable-next-line @next/next/no-img-element -- plain img keeps Blob URLs out of the image-optimizer quota
             <img
               src={recipe.imageData}
               alt={recipe.title}

@@ -17,7 +17,7 @@ export default function RecipeCard({ recipe, imageUrl, saved, canSave, onToggleS
       {/* Dish photo — the striped block only shows if image generation failed */}
       <div className="relative flex h-70 items-center justify-center bg-[repeating-linear-gradient(135deg,#F0E3D3,#F0E3D3_13px,#EAD9C6_13px,#EAD9C6_26px)] sm:h-90">
         {imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- data URI; next/image doesn't support them
+          // eslint-disable-next-line @next/next/no-img-element -- plain img keeps Blob URLs out of the image-optimizer quota
           <img
             src={imageUrl}
             alt={recipe.title}

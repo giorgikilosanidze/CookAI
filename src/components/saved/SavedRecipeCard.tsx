@@ -33,7 +33,7 @@ export default function SavedRecipeCard({ recipe, index, onOpen, onDelete }: Pro
 				style={recipe.imageData ? undefined : { background: thumbGradient(index) }}
 			>
 				{recipe.imageData ? (
-					// eslint-disable-next-line @next/next/no-img-element -- data URI; next/image doesn't support them
+					// eslint-disable-next-line @next/next/no-img-element -- plain img keeps Blob URLs out of the image-optimizer quota
 					<img
 						src={recipe.imageData}
 						alt={recipe.title}

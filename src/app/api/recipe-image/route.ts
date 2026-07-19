@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateRecipeImage } from "@/lib/generateRecipeImage";
+import { storeRecipeImage } from "@/lib/storeRecipeImage";
 import { clientIp, rateLimit } from "@/lib/rateLimit";
 
 export async function POST(request: Request) {
@@ -30,8 +31,11 @@ export async function POST(request: Request) {
   }
 
   try {
-    const image = await generateRecipeImage(title, description);
-    return NextResponse.json({ image });
+    const dataUri = await generateRecipeImage(title, description);
+    // Host the full-size photo on Vercel Blob — saves keep the real image
+    // and share pages use it for OG previews.
+    const url = await storeRecipeImage(dataUri, title);
+    return NextResponse.json({ image: url });
   } catch (err) {
     console.error("recipe-image route error:", err);
     return NextResponse.json(

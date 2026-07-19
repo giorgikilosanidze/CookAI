@@ -1,7 +1,7 @@
 import type { Recipe } from "@/lib/types";
 
 // A saved recipe as the client sees it: a Recipe with its database id and
-// the stored thumbnail (JPEG data URI, null when the photo wasn't saved).
+// the public Blob URL of its dish photo (null when the photo wasn't saved).
 export type SavedRecipe = Recipe & { id: string; imageData: string | null };
 
 // Decorative stripe palettes for the dish-photo placeholders, varied per card.

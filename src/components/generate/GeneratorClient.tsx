@@ -8,7 +8,6 @@ import RecipeTweaker from '@/components/generate/RecipeTweaker';
 import RecipeCard from '@/components/RecipeCard';
 import Refresh from '@/components/icons/Refresh';
 import { CUISINES, DIETS, COOK_TIMES, STATUS_MESSAGES } from '@/components/generate/constants';
-import { downscaleImage } from '@/components/generate/utils';
 import { MAX_AVOID_TITLES, MAX_INGREDIENTS, MAX_INGREDIENT_LENGTH } from '@/lib/constants';
 import type { Phase } from '@/components/generate/types';
 import type { Recipe } from '@/lib/types';
@@ -65,7 +64,7 @@ export default function GeneratorClient({ signedIn }: Props) {
 		}
 	}, [phase]);
 
-	// Fetch a dish photo for a recipe. Resolves to a data URI, or null on
+	// Fetch a dish photo for a recipe. Resolves to a Blob URL, or null on
 	// failure/cancel — callers decide what to show instead.
 	const fetchImage = async (target: Recipe): Promise<string | null> => {
 		imageAbortRef.current?.abort();
@@ -174,19 +173,11 @@ export default function GeneratorClient({ signedIn }: Props) {
 					setSaved(false);
 				}
 			} else {
-				// Ship a downscaled thumbnail, not the ~1 MB generated photo.
-				let image: string | undefined;
-				if (imageUrl) {
-					try {
-						image = await downscaleImage(imageUrl);
-					} catch {
-						image = undefined;
-					}
-				}
 				const res = await fetch('/api/recipes', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ recipe, image }),
+					// The Blob URL from generation — the photo is already hosted.
+					body: JSON.stringify({ recipe, image: imageUrl ?? undefined }),
 				});
 				const data = await res.json();
 				if (res.ok && typeof data.id === 'string') {
