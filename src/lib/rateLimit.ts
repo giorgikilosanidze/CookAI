@@ -1,45 +1,73 @@
-// Fixed-window in-memory rate limiter. Per serverless instance, so limits
-// reset on cold starts — this is abuse insurance for the AI endpoints, not
-// precise accounting. Swap for a Redis-backed limiter if that ever matters.
+import "server-only";
+import { Redis } from "@upstash/redis";
+import { Ratelimit } from "@upstash/ratelimit";
 
-type Bucket = { count: number; resetAt: number };
+// Fixed-window rate limiter backed by Upstash Redis, shared by every
+// serverless instance — unlike an in-memory counter, limits hold under
+// concurrent instances and survive cold starts.
 
-const buckets = new Map<string, Bucket>();
-const MAX_BUCKETS = 5000;
+// Lazy singletons: constructed on first use (not at module load, which
+// Next's build-time page-data collection also imports) so a missing config
+// fails with a clear error on the first request, not on `next build`.
+let redis: Redis | undefined;
+function getRedis(): Redis {
+  if (!redis) {
+    // Vercel's "Storage" tab still provisions the legacy Vercel KV variable
+    // names for a connected Redis database; UPSTASH_REDIS_REST_* is the
+    // name used when Upstash is configured directly. Accept either.
+    const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
+    const token = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
+    if (!url || !token) {
+      throw new Error(
+        "Redis isn't configured — set UPSTASH_REDIS_REST_URL/TOKEN or KV_REST_API_URL/TOKEN in .env.local.",
+      );
+    }
+    redis = new Redis({ url, token });
+  }
+  return redis;
+}
+
+// One Ratelimit instance per distinct (limit, window) pair, reused across
+// calls — cheap to construct, but no need to repeat it every request.
+const limiters = new Map<string, Ratelimit>();
+
+function getLimiter(limit: number, windowMs: number): Ratelimit {
+  const cacheKey = `${limit}:${windowMs}`;
+  let limiter = limiters.get(cacheKey);
+  if (!limiter) {
+    limiter = new Ratelimit({
+      redis: getRedis(),
+      limiter: Ratelimit.fixedWindow(limit, `${windowMs} ms`),
+      prefix: "cookai",
+    });
+    limiters.set(cacheKey, limiter);
+  }
+  return limiter;
+}
 
 export type RateLimitResult =
   | { ok: true }
   | { ok: false; retryAfterSeconds: number };
 
-export function rateLimit(
+export async function rateLimit(
   key: string,
   limit: number,
   windowMs: number,
-): RateLimitResult {
-  const now = Date.now();
-
-  // Keep the map bounded: drop expired windows once it grows large.
-  if (buckets.size >= MAX_BUCKETS) {
-    for (const [k, b] of buckets) {
-      if (now >= b.resetAt) buckets.delete(k);
-    }
-  }
-
-  const bucket = buckets.get(key);
-  if (!bucket || now >= bucket.resetAt) {
-    buckets.set(key, { count: 1, resetAt: now + windowMs });
-    return { ok: true };
-  }
-
-  if (bucket.count >= limit) {
+): Promise<RateLimitResult> {
+  try {
+    const result = await getLimiter(limit, windowMs).limit(key);
+    if (result.success) return { ok: true };
     return {
       ok: false,
-      retryAfterSeconds: Math.max(1, Math.ceil((bucket.resetAt - now) / 1000)),
+      retryAfterSeconds: Math.max(1, Math.ceil((result.reset - Date.now()) / 1000)),
     };
+  } catch (err) {
+    // Covers both a Redis hiccup and Upstash being unconfigured — either
+    // way this is abuse insurance, not a security boundary, so fail open
+    // (allow the request) rather than take the whole demo down.
+    console.error("rate limit check failed, allowing request:", err);
+    return { ok: true };
   }
-
-  bucket.count += 1;
-  return { ok: true };
 }
 
 // Best-effort client identity behind Vercel's proxy. Falls back to a shared

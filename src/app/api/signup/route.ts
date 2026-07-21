@@ -7,7 +7,7 @@ import { clientIp, rateLimit } from "@/lib/rateLimit";
 
 export async function POST(request: Request) {
   // Slow down scripted account creation.
-  const limited = rateLimit(`signup:${clientIp(request)}`, 5, 10 * 60_000);
+  const limited = await rateLimit(`signup:${clientIp(request)}`, 5, 10 * 60_000);
   if (!limited.ok) {
     return NextResponse.json(
       { error: "Too many signup attempts — try again in a few minutes." },

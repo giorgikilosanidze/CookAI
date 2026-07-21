@@ -10,7 +10,7 @@ import {
 
 export async function POST(request: Request) {
   // Generation calls Gemini, which costs quota — cap requests per client.
-  const limited = rateLimit(`generate:${clientIp(request)}`, 8, 60_000);
+  const limited = await rateLimit(`generate:${clientIp(request)}`, 8, 60_000);
   if (!limited.ok) {
     return NextResponse.json(
       { error: "Too many requests — give it a minute and try again." },

@@ -31,7 +31,7 @@ Tell CookAI the ingredients you have on hand and it writes a complete recipe in 
 ### Implementation notes
 
 - The generate endpoint has two modes — fresh generation and tweak — behind one route, with server-side input caps mirrored client-side for UX.
-- API routes are rate-limited per client (generation, image, signup) so the public demo can't be scripted into burning AI quota.
+- API routes are rate-limited per client (generation, image, signup) via **Upstash Redis** — a shared counter across serverless instances, not an in-memory one — so the public demo can't be scripted into burning AI quota.
 - SEO: per-page metadata with canonical URLs, OG/Twitter cards, `robots.txt` + `sitemap.xml` via the Metadata API, `WebApplication` and `Recipe` JSON-LD.
 - Dish photos are uploaded to **Vercel Blob** server-side, so saved recipes keep the full-quality image and shared links unfurl with the actual dish photo (OG image + `Recipe` JSON-LD `image`).
 
@@ -52,6 +52,7 @@ Create `.env.local` with:
 | `CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_API_TOKEN` | Workers AI credentials for dish photos                                                                         |
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`          | _(optional)_ Google OAuth — the button hides itself when unset                                                 |
 | `BLOB_READ_WRITE_TOKEN`                          | Vercel Blob store (public access) for hosted dish photos — created via the project's Storage tab; on Vercel the OIDC pair (`BLOB_STORE_ID` + `VERCEL_OIDC_TOKEN`) is used automatically |
+| `KV_REST_API_URL` / `KV_REST_API_TOKEN`          | Redis (Upstash, via the project's Storage tab) backing the rate limiter — `UPSTASH_REDIS_REST_URL`/`_TOKEN` also work if Upstash is connected directly |
 | `NEXT_PUBLIC_SITE_URL`                           | _(optional)_ canonical origin for SEO metadata; on Vercel it falls back to the production domain automatically |
 
 Then apply the schema with `npx prisma migrate dev` and open http://localhost:3000.

@@ -5,7 +5,7 @@ import { clientIp, rateLimit } from "@/lib/rateLimit";
 
 export async function POST(request: Request) {
   // Image generation burns Cloudflare Workers AI credits — cap per client.
-  const limited = rateLimit(`recipe-image:${clientIp(request)}`, 8, 60_000);
+  const limited = await rateLimit(`recipe-image:${clientIp(request)}`, 8, 60_000);
   if (!limited.ok) {
     return NextResponse.json(
       { error: "Too many requests — give it a minute and try again." },
