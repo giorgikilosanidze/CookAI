@@ -1,4 +1,4 @@
-import { STEPS } from "@/components/home/constants";
+import { STEPS } from '@/components/home/constants';
 
 export default function HowItWorks() {
 	return (
@@ -18,7 +18,7 @@ export default function HowItWorks() {
 							className="flex flex-col gap-3.5 rounded-[18px] border border-line bg-surface px-6.5 py-7.5"
 						>
 							<div className="flex items-center justify-between">
-								<span className="flex h-14 w-14 items-center justify-center rounded-[15px] bg-terracotta/10 text-terracotta">
+								<span className="text-terracotta">
 									<Icon size={26} />
 								</span>
 								<span className="font-mono text-[15px] font-semibold text-faint">
