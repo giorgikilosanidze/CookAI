@@ -3,7 +3,7 @@ export const CUISINES = [
   "Italian",
   "Mexican",
   "Indian",
-  "Japanese",
+  "Asian",
   "Mediterranean",
 ];
 export const DIETS = ["None", "Vegetarian", "Vegan", "Gluten-free"];
@@ -25,6 +25,11 @@ export const TWEAK_SUGGESTIONS = [
 	"Simpler steps",
 	"Under 30 minutes",
 ];
+
+// Ingredient-photo scans are downscaled in the browser before upload —
+// detection only needs ~1024px, not a 10 MB phone photo.
+export const PHOTO_MAX_DIMENSION = 1024;
+export const PHOTO_JPEG_QUALITY = 0.8;
 
 // Rotating status lines shown while a recipe is being generated.
 export const STATUS_MESSAGES = [

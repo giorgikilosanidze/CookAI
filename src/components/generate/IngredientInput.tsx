@@ -7,9 +7,12 @@ type Props = {
 	ingredients: string[];
 	onAdd: (value: string) => void;
 	onRemove: (index: number) => void;
+	/** Enter pressed — the not-yet-committed draft is passed along so the
+	 * parent can include it in the generation. */
+	onGenerate: (pendingDraft: string) => void;
 };
 
-export default function IngredientInput({ ingredients, onAdd, onRemove }: Props) {
+export default function IngredientInput({ ingredients, onAdd, onRemove, onGenerate }: Props) {
 	const [draft, setDraft] = useState('');
 	const inputRef = useRef<HTMLInputElement>(null);
 
@@ -20,7 +23,12 @@ export default function IngredientInput({ ingredients, onAdd, onRemove }: Props)
 	};
 
 	const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-		if (e.key === 'Enter' || e.key === ',') {
+		// metaKey covers ⌘ on macOS.
+		if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+			e.preventDefault();
+			onGenerate(draft.trim().replace(/,$/, '').trim());
+			setDraft('');
+		} else if (e.key === 'Enter' || e.key === ',') {
 			e.preventDefault();
 			commit(draft);
 		} else if (e.key === 'Backspace' && draft === '' && ingredients.length) {
@@ -74,7 +82,8 @@ export default function IngredientInput({ ingredients, onAdd, onRemove }: Props)
 				/>
 			</div>
 			<span className="text-[13px] text-faint">
-				Press Enter or comma to add each ingredient. Up to {MAX_INGREDIENTS}.
+				Press Enter or Comma to add each ingredient, Ctrl+Enter to generate. Up to{' '}
+				{MAX_INGREDIENTS}.
 			</span>
 		</div>
 	);

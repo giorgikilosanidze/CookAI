@@ -2,13 +2,15 @@
 
 import { useEffect, useRef, useState } from 'react';
 import IngredientInput from '@/components/generate/IngredientInput';
+import PhotoScanButton from '@/components/generate/PhotoScanButton';
 import FilterSelect from '@/components/generate/FilterSelect';
 import GeneratingState from '@/components/generate/GeneratingState';
 import RecipeTweaker from '@/components/generate/RecipeTweaker';
 import RecipeCard from '@/components/RecipeCard';
 import Refresh from '@/components/icons/Refresh';
 import { CUISINES, DIETS, COOK_TIMES, STATUS_MESSAGES } from '@/components/generate/constants';
-import { MAX_AVOID_TITLES, MAX_INGREDIENTS, MAX_INGREDIENT_LENGTH } from '@/lib/constants';
+import { withIngredient } from '@/components/generate/utils';
+import { MAX_AVOID_TITLES } from '@/lib/constants';
 import type { Phase } from '@/components/generate/types';
 import type { Recipe } from '@/lib/types';
 
@@ -87,13 +89,7 @@ export default function GeneratorClient({ signedIn }: Props) {
 	};
 
 	const addIngredient = (value: string) => {
-		const trimmed = value.slice(0, MAX_INGREDIENT_LENGTH);
-		setIngredients((prev) =>
-			prev.length >= MAX_INGREDIENTS ||
-			prev.some((x) => x.toLowerCase() === trimmed.toLowerCase())
-				? prev
-				: [...prev, trimmed],
-		);
+		setIngredients((prev) => withIngredient(prev, value));
 	};
 
 	const removeIngredient = (index: number) => {
@@ -101,9 +97,12 @@ export default function GeneratorClient({ signedIn }: Props) {
 	};
 
 	// Call the Gemini-backed API, rotating status messages while it works.
-	const generate = async () => {
+	// `listOverride` lets Enter-to-generate pass a list that includes the
+	// just-committed draft, which state wouldn't reflect yet.
+	const generate = async (listOverride?: string[]) => {
+		const list = listOverride ?? ingredients;
 		if (phase === 'loading') return;
-		if (ingredients.length === 0) {
+		if (list.length === 0) {
 			setErrorMsg('Add at least one ingredient first.');
 			setPhase('error');
 			return;
@@ -128,7 +127,7 @@ export default function GeneratorClient({ signedIn }: Props) {
 			const res = await fetch('/api/generate', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ ingredients, cuisine, diet, cookTime, avoid: avoidRef.current }),
+				body: JSON.stringify({ ingredients: list, cuisine, diet, cookTime, avoid: avoidRef.current }),
 				signal: controller.signal,
 			});
 
@@ -266,11 +265,28 @@ export default function GeneratorClient({ signedIn }: Props) {
 
 			{/* Form card */}
 			<div className="relative flex flex-col gap-5.5 rounded-[20px] border border-line bg-surface p-7 shadow-[0_6px_24px_rgba(46,42,37,0.05)]">
-				<IngredientInput
-					ingredients={ingredients}
-					onAdd={addIngredient}
-					onRemove={removeIngredient}
-				/>
+				<div className="flex flex-col gap-3">
+					<IngredientInput
+						ingredients={ingredients}
+						onAdd={addIngredient}
+						onRemove={removeIngredient}
+						onGenerate={(pendingDraft) => {
+							// Fold the not-yet-committed draft in synchronously so the
+							// request includes it.
+							const next = pendingDraft
+								? withIngredient(ingredients, pendingDraft)
+								: ingredients;
+							setIngredients(next);
+							avoidRef.current = [];
+							generate(next);
+						}}
+					/>
+					{/* addIngredient dedupes and enforces MAX_INGREDIENTS per item. */}
+					<PhotoScanButton
+						disabled={loading}
+						onDetected={(list) => list.forEach(addIngredient)}
+					/>
+				</div>
 
 				<div className="flex flex-col gap-3">
 					<span className="text-overline uppercase text-faint">Refine — optional</span>
@@ -337,7 +353,7 @@ export default function GeneratorClient({ signedIn }: Props) {
 					<p className="text-[15px] font-medium text-terracotta">{errorMsg}</p>
 					<button
 						type="button"
-						onClick={generate}
+						onClick={() => generate()}
 						className="rounded-[10px] bg-terracotta px-5 py-2.5 text-[15px] font-semibold text-white no-underline shadow-cta transition-colors hover:bg-terracotta/90 cursor-pointer"
 					>
 						Try again
