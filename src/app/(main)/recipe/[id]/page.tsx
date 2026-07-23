@@ -63,7 +63,7 @@ export default async function RecipePage({ params }: Props) {
       <article className="overflow-hidden rounded-[22px] border border-line bg-surface shadow-[0_10px_36px_rgba(46,42,37,0.09)]">
         {/* Dish photo — Blob-hosted, or the striped placeholder */}
         <div
-          className="relative h-55 sm:h-70"
+          className="relative h-75 sm:h-95"
           style={recipe.imageData ? undefined : { background: thumbGradient(0) }}
         >
           {recipe.imageData && (

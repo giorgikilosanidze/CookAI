@@ -1,29 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import type { SavedRecipe } from "@/lib/savedRecipes";
 import SavedRecipeCard from "@/components/saved/SavedRecipeCard";
 import RecipeModal from "@/components/saved/RecipeModal";
 import EmptyState from "@/components/saved/EmptyState";
+import Pagination from "@/components/saved/Pagination";
 
 type Props = {
-  initialRecipes: SavedRecipe[];
+  recipes: SavedRecipe[];
+  totalCount: number;
+  page: number;
+  totalPages: number;
 };
 
-export default function SavedRecipesClient({ initialRecipes }: Props) {
-  const [recipes, setRecipes] = useState<SavedRecipe[]>(initialRecipes);
+export default function SavedRecipesClient({
+  recipes,
+  totalCount,
+  page,
+  totalPages,
+}: Props) {
+  const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  // Deletes re-fetch the current page from the server so the grid backfills
+  // from later pages; isPending dims the grid while that refresh is in flight.
+  const [isPending, startTransition] = useTransition();
 
   const handleDelete = async (id: string) => {
     if (deletingId) return;
     setDeletingId(id);
     try {
       const res = await fetch(`/api/recipes/${id}`, { method: "DELETE" });
-      // 404 means it's already gone — drop it from the grid either way.
+      // 404 means it's already gone — refresh the grid either way. The server
+      // redirects to the previous page if this one just became empty.
       if (res.ok || res.status === 404) {
-        setRecipes((prev) => prev.filter((r) => r.id !== id));
         setSelectedId((current) => (current === id ? null : current));
+        startTransition(() => router.refresh());
       }
     } catch {
       // network hiccup — keep the card so the user can retry
@@ -32,7 +46,6 @@ export default function SavedRecipesClient({ initialRecipes }: Props) {
     }
   };
 
-  const count = recipes.length;
   const selectedIndex = recipes.findIndex((r) => r.id === selectedId);
   const selected = selectedIndex >= 0 ? recipes[selectedIndex] : null;
 
@@ -44,15 +57,19 @@ export default function SavedRecipesClient({ initialRecipes }: Props) {
           Saved Recipes
         </h1>
         <span className="text-base text-muted">
-          {count === 1 ? "1 recipe" : `${count} recipes`}
+          {totalCount === 1 ? "1 recipe" : `${totalCount} recipes`}
         </span>
       </div>
 
       {/* Grid OR empty state, driven by the data */}
-      {count === 0 ? (
+      {totalCount === 0 ? (
         <EmptyState />
       ) : (
-        <div className="grid gap-6 [grid-template-columns:repeat(auto-fill,minmax(258px,1fr))]">
+        <div
+          className={`grid gap-6 [grid-template-columns:repeat(auto-fill,minmax(258px,1fr))] transition-opacity ${
+            isPending ? "opacity-60" : ""
+          }`}
+        >
           {recipes.map((recipe, index) => (
             <SavedRecipeCard
               key={recipe.id}
@@ -64,6 +81,8 @@ export default function SavedRecipesClient({ initialRecipes }: Props) {
           ))}
         </div>
       )}
+
+      <Pagination page={page} totalPages={totalPages} />
 
       {/* Detail modal */}
       {selected && (

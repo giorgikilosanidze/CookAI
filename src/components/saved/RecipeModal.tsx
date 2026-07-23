@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { SavedRecipe } from "@/lib/savedRecipes";
 import { thumbGradient } from "@/lib/savedRecipes";
 import ArrowRight from "@/components/icons/ArrowRight";
+import Close from "@/components/icons/Close";
 import Trash from "@/components/icons/Trash";
 import RecipeDetails from "@/components/RecipeDetails";
 import ShareButton from "@/components/recipe/ShareButton";
@@ -50,7 +51,7 @@ export default function RecipeModal({
       >
         {/* Header — stored photo, or the striped placeholder when none */}
         <div
-          className="relative h-[220px]"
+          className="relative h-80"
           style={recipe.imageData ? undefined : { background: thumbGradient(index) }}
         >
           {recipe.imageData && (
@@ -70,9 +71,9 @@ export default function RecipeModal({
             type="button"
             aria-label="Close"
             onClick={onClose}
-            className="absolute right-4 top-4 flex h-[38px] w-[38px] items-center justify-center rounded-full bg-surface/95 text-xl leading-none text-subtle shadow-[0_2px_10px_rgba(46,42,37,0.18)] transition-colors hover:bg-white hover:text-ink"
+            className="absolute right-4 top-4 flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-full bg-surface/95 text-subtle shadow-[0_2px_10px_rgba(46,42,37,0.18)] transition-colors hover:bg-terracotta hover:text-white"
           >
-            ×
+            <Close size={18} />
           </button>
         </div>
 

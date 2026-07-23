@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import SavedRecipesClient from "@/components/saved/SavedRecipesClient";
+import { RECIPES_PER_PAGE } from "./constants";
 import type { SavedRecipe } from "@/lib/savedRecipes";
 import type { Ingredient } from "@/lib/types";
 
@@ -12,14 +13,34 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function SavedPage() {
+type Props = {
+  searchParams: Promise<{ page?: string | string[] }>;
+};
+
+export default async function SavedPage({ searchParams }: Props) {
   // Saved recipes are per-user, so this page requires a session.
   const session = await auth();
   if (!session?.user) redirect("/signin");
 
+  const { page: pageParam } = await searchParams;
+  const requested = Number(Array.isArray(pageParam) ? pageParam[0] : pageParam);
+  const page = Number.isInteger(requested) && requested > 1 ? requested : 1;
+
+  const where = { userId: session.user.id };
+  const totalCount = await prisma.savedRecipe.count({ where });
+  const totalPages = Math.max(1, Math.ceil(totalCount / RECIPES_PER_PAGE));
+
+  // Past-the-end page (stale link, or the last recipe on it was deleted) —
+  // send the user to the last page that still exists.
+  if (page > totalPages) {
+    redirect(totalPages === 1 ? "/saved" : `/saved?page=${totalPages}`);
+  }
+
   const rows = await prisma.savedRecipe.findMany({
-    where: { userId: session.user.id },
+    where,
     orderBy: { createdAt: "desc" },
+    skip: (page - 1) * RECIPES_PER_PAGE,
+    take: RECIPES_PER_PAGE,
   });
 
   const recipes: SavedRecipe[] = rows.map((row) => ({
@@ -33,5 +54,12 @@ export default async function SavedPage() {
     imageData: row.imageData,
   }));
 
-  return <SavedRecipesClient initialRecipes={recipes} />;
+  return (
+    <SavedRecipesClient
+      recipes={recipes}
+      totalCount={totalCount}
+      page={page}
+      totalPages={totalPages}
+    />
+  );
 }
