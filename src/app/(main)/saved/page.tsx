@@ -27,7 +27,20 @@ export default async function SavedPage({ searchParams }: Props) {
   const page = Number.isInteger(requested) && requested > 1 ? requested : 1;
 
   const where = { userId: session.user.id };
-  const totalCount = await prisma.savedRecipe.count({ where });
+
+  // Both queries in one round trip rather than two. The redirect below only
+  // fires on a stale page number, so in that rare case we discard rows we
+  // already have — cheaper than serialising every normal page load.
+  const [totalCount, rows] = await Promise.all([
+    prisma.savedRecipe.count({ where }),
+    prisma.savedRecipe.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * RECIPES_PER_PAGE,
+      take: RECIPES_PER_PAGE,
+    }),
+  ]);
+
   const totalPages = Math.max(1, Math.ceil(totalCount / RECIPES_PER_PAGE));
 
   // Past-the-end page (stale link, or the last recipe on it was deleted) —
@@ -35,13 +48,6 @@ export default async function SavedPage({ searchParams }: Props) {
   if (page > totalPages) {
     redirect(totalPages === 1 ? "/saved" : `/saved?page=${totalPages}`);
   }
-
-  const rows = await prisma.savedRecipe.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    skip: (page - 1) * RECIPES_PER_PAGE,
-    take: RECIPES_PER_PAGE,
-  });
 
   const recipes: SavedRecipe[] = rows.map((row) => ({
     id: row.id,

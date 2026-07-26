@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { deleteRecipeImage } from "@/lib/storeRecipeImage";
+import { recipeCacheTag } from "@/lib/savedRecipes";
 
 export async function DELETE(
   _request: Request,
@@ -27,6 +29,12 @@ export async function DELETE(
   }
 
   await prisma.savedRecipe.delete({ where: { id: recipe.id } });
+
+  // Without this the share page would keep serving the cached copy of a
+  // recipe its owner just deleted. `expire: 0` rather than the "max" profile:
+  // that one is stale-while-revalidate, which would hand the deleted recipe
+  // to one more visitor before refreshing.
+  revalidateTag(recipeCacheTag(recipe.id), { expire: 0 });
 
   // After the row, so a storage hiccup can't leave a recipe pointing at an
   // image that no longer exists. deleteRecipeImage swallows its own errors.

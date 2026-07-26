@@ -4,6 +4,13 @@ import type { Recipe } from "@/lib/types";
 // the public Blob URL of its dish photo (null when the photo wasn't saved).
 export type SavedRecipe = Recipe & { id: string; imageData: string | null };
 
+// Cache tag for one recipe's share page. Saved recipes are immutable — there's
+// no edit path, only create and delete — so the share page can serve a cached
+// read until the recipe is deleted, which revalidates this tag.
+export function recipeCacheTag(id: string): string {
+  return `saved-recipe:${id}`;
+}
+
 // Decorative stripe palettes for the dish-photo placeholders, varied per card.
 const STRIPES: [string, string][] = [
   ["#F0E3D3", "#EAD9C6"],
