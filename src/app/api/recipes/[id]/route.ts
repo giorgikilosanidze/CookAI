@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { deleteRecipeImage } from "@/lib/storeRecipeImage";
 
 export async function DELETE(
   _request: Request,
@@ -13,14 +14,23 @@ export async function DELETE(
 
   const { id } = await params;
 
-  // Scoping the delete by userId means you can only remove your own recipes.
-  const result = await prisma.savedRecipe.deleteMany({
+  // Scoping by userId means you can only remove your own recipes. Looked up
+  // first (rather than deleteMany) so we still have the photo's URL to clean
+  // up once the row is gone.
+  const recipe = await prisma.savedRecipe.findFirst({
     where: { id, userId: session.user.id },
+    select: { id: true, imageData: true },
   });
 
-  if (result.count === 0) {
+  if (!recipe) {
     return NextResponse.json({ error: "Recipe not found." }, { status: 404 });
   }
+
+  await prisma.savedRecipe.delete({ where: { id: recipe.id } });
+
+  // After the row, so a storage hiccup can't leave a recipe pointing at an
+  // image that no longer exists. deleteRecipeImage swallows its own errors.
+  if (recipe.imageData) await deleteRecipeImage(recipe.imageData);
 
   return NextResponse.json({ ok: true });
 }

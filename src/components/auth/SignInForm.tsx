@@ -37,7 +37,13 @@ export default function SignInForm() {
 			redirect: false,
 		});
 		if (res?.error) {
-			setFormError('Invalid email or password.');
+			// Every other failure stays deliberately vague so it doesn't reveal
+			// whether the email exists.
+			setFormError(
+				res.code === 'too_many_attempts'
+					? 'Too many sign-in attempts — try again in a few minutes.'
+					: 'Invalid email or password.',
+			);
 			setBusy(false);
 			return;
 		}

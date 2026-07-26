@@ -1,6 +1,11 @@
 import "server-only";
 import { GoogleGenAI, Type } from "@google/genai";
 import type { Ingredient, Recipe } from "@/lib/types";
+import {
+  MAX_RECIPE_FIELD_LENGTH,
+  MAX_RECIPE_INGREDIENTS,
+  MAX_RECIPE_STEPS,
+} from "@/lib/constants";
 
 export type GenerateInput = {
   ingredients: string[];
@@ -103,27 +108,37 @@ function buildPrompt({ ingredients, cuisine, diet, cookTime, avoid, tweak, baseR
     .join("\n");
 }
 
-// Runtime check that Gemini's `recipe` object really matches the Recipe type.
+// A string field that's present and not absurdly long. The ceiling matters
+// because /api/recipes validates client-supplied recipes with this guard, not
+// just Gemini's own output.
+function isBoundedString(x: unknown): x is string {
+  return typeof x === "string" && x.length <= MAX_RECIPE_FIELD_LENGTH;
+}
+
+// Runtime check that a `recipe` object really matches the Recipe type, and is
+// within the size a real recipe could plausibly be.
 export function isRecipe(x: unknown): x is Recipe {
   if (!x || typeof x !== "object") return false;
   const r = x as Record<string, unknown>;
   return (
-    typeof r.title === "string" &&
+    isBoundedString(r.title) &&
     r.title.trim() !== "" &&
-    typeof r.description === "string" &&
-    typeof r.time === "string" &&
-    typeof r.servings === "string" &&
+    isBoundedString(r.description) &&
+    isBoundedString(r.time) &&
+    isBoundedString(r.servings) &&
     Array.isArray(r.ingredients) &&
     r.ingredients.length > 0 &&
+    r.ingredients.length <= MAX_RECIPE_INGREDIENTS &&
     r.ingredients.every(
       (i) =>
         !!i &&
-        typeof (i as Ingredient).amount === "string" &&
-        typeof (i as Ingredient).name === "string",
+        isBoundedString((i as Ingredient).amount) &&
+        isBoundedString((i as Ingredient).name),
     ) &&
     Array.isArray(r.steps) &&
     r.steps.length > 0 &&
-    r.steps.every((s) => typeof s === "string")
+    r.steps.length <= MAX_RECIPE_STEPS &&
+    r.steps.every(isBoundedString)
   );
 }
 

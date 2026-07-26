@@ -1,6 +1,7 @@
 import Hero from "@/components/home/Hero";
 import HowItWorks from "@/components/home/HowItWorks";
 import CtaBanner from "@/components/home/CtaBanner";
+import { jsonLdScript } from "@/lib/jsonLd";
 import { SITE_URL } from "@/lib/siteUrl";
 
 // Structured data so search engines understand what CookAI is.
@@ -20,7 +21,7 @@ export default function Home() {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(JSON_LD) }}
       />
       <Hero />
       <HowItWorks />

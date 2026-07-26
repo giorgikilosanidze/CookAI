@@ -5,6 +5,7 @@ import RecipeDetails from "@/components/RecipeDetails";
 import ShareButton from "@/components/recipe/ShareButton";
 import ArrowRight from "@/components/icons/ArrowRight";
 import { thumbGradient } from "@/lib/savedRecipes";
+import { jsonLdScript } from "@/lib/jsonLd";
 import { SITE_URL } from "@/lib/siteUrl";
 import { getSavedRecipe, recipeJsonLd } from "./utils";
 
@@ -57,7 +58,9 @@ export default async function RecipePage({ params }: Props) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(recipeJsonLd(recipe, `${SITE_URL}/recipe/${id}`)),
+          // Escaped, not plain JSON.stringify — the recipe fields are
+          // user-controlled and would otherwise break out of this tag.
+          __html: jsonLdScript(recipeJsonLd(recipe, `${SITE_URL}/recipe/${id}`)),
         }}
       />
       <article className="overflow-hidden rounded-[22px] border border-line bg-surface shadow-[0_10px_36px_rgba(46,42,37,0.09)]">

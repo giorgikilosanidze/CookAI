@@ -66,7 +66,7 @@ export default function GeneratorClient({ signedIn }: Props) {
 		}
 	}, [phase]);
 
-	// Fetch a dish photo for a recipe. Resolves to a Blob URL, or null on
+	// Fetch a dish photo for a recipe. Resolves to a JPEG data URI, or null on
 	// failure/cancel — callers decide what to show instead.
 	const fetchImage = async (target: Recipe): Promise<string | null> => {
 		imageAbortRef.current?.abort();
@@ -175,7 +175,8 @@ export default function GeneratorClient({ signedIn }: Props) {
 				const res = await fetch('/api/recipes', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
-					// The Blob URL from generation — the photo is already hosted.
+					// The generated photo as a data URI — saving is what makes it
+					// worth hosting, so the server uploads it from here.
 					body: JSON.stringify({ recipe, image: imageUrl ?? undefined }),
 				});
 				const data = await res.json();

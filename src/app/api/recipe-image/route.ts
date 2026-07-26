@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { generateRecipeImage } from "@/lib/generateRecipeImage";
-import { storeRecipeImage } from "@/lib/storeRecipeImage";
 import { clientIp, rateLimit } from "@/lib/rateLimit";
 
 export async function POST(request: Request) {
@@ -31,11 +30,11 @@ export async function POST(request: Request) {
   }
 
   try {
+    // Returned inline rather than uploaded: most generated photos belong to
+    // recipes nobody saves, and only a saved recipe needs a durable URL (for
+    // its share page and OG preview). /api/recipes uploads it at save time.
     const dataUri = await generateRecipeImage(title, description);
-    // Host the full-size photo on Vercel Blob — saves keep the real image
-    // and share pages use it for OG previews.
-    const url = await storeRecipeImage(dataUri, title);
-    return NextResponse.json({ image: url });
+    return NextResponse.json({ image: dataUri });
   } catch (err) {
     console.error("recipe-image route error:", err);
     return NextResponse.json(

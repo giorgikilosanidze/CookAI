@@ -1,5 +1,9 @@
 import "server-only";
-import { put } from "@vercel/blob";
+import { del, put } from "@vercel/blob";
+
+// All Vercel Blob access lives here. Blobs are written only when a recipe is
+// saved and removed when it's deleted, so storage mirrors the SavedRecipe
+// table one-for-one instead of growing with every generated photo.
 
 // Uploads a generated dish photo (JPEG data URI) to Vercel Blob and returns
 // its public URL. Throws on failure/misconfig — Blob is a required part of
@@ -28,4 +32,16 @@ export async function storeRecipeImage(
     },
   );
   return url;
+}
+
+// Removes a saved recipe's dish photo. Every upload gets a random suffix, so
+// no two recipes share a blob and deleting one can never break another card.
+// Never throws: the database row is already gone by the time this runs, and a
+// leftover blob is a smaller problem than a delete that reports failure.
+export async function deleteRecipeImage(url: string): Promise<void> {
+  try {
+    await del(url);
+  } catch (err) {
+    console.error("failed to delete recipe image blob:", err);
+  }
 }
